@@ -10,7 +10,7 @@ require 'erb'
 @start_dep  = ['$network', '$local_fs', '$remote_fs']
 @stop_dep = ['$network', '$local_fs', '$remote_fs']
 
-$render = ERB.new(File.open('../debian.erb').read,0,'-').result
+$render = ERB.new(File.open('../erb/debian-init.erb').read,0,'-').result
 
 describe "creating the Debian init script" do
 
