@@ -1,0 +1,130 @@
+#!/bin/bash
+#
+#
+# This is free software; you may redistribute it and/or modify
+# it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2,
+# or (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License with
+# the Debian operating system, in /usr/share/common-licenses/GPL;  if
+# not, write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA 02111-1307 USA
+#
+
+### BEGIN INIT INFO
+# Provides:          <%= @name %>
+# Required-Start:    <% @start_dep.each do |d|%><%= d + " " -%><% end %>
+# Required-Stop:     <% @stop_dep.each do |d|%><%= d + " " -%><% end %>
+<% if defined? @should_start_dep -%>
+# Should-Start:      <% @should_start_dep.each do |d|%><%= d + " " -%><% end %>
+<% end -%>
+<% if defined? @should_stop_dep -%>
+# Should-Stop:       <% @should_stop_dep.each do |d|%><%= d + " " -%><% end %>
+<% end -%>
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: <%= @description %>
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+# Source optional arguments
+if [ -r /etc/default/<%= @name %> ]; then
+    source /etc/default/<%= @name %>
+fi 
+
+do_start(){
+    log_daemon_msg "Starting <%= @description %>" "<%= @name %>"
+    start-stop-daemon \
+        --start \
+        --quiet \
+        --pidfile /var/run/<%= @name%>.pid \
+        --name `basename <%= @daemon_path %>` \
+        --startas <%= @daemon_path %> \
+<% if defined? @user # Check if we want to pass the user through -%>
+        --chuid <%= @user %> \
+<% end -%>
+<% if defined? @group # Check if we want to run as group -%>
+        --group <%= @group %>
+<% end -%>
+<% if @daemon_needs_background # Foreground process send to BG and make PID file -%>
+        --background \
+        --make-pidfile \
+<% end -%>
+        -- \
+        <%= @static_start_args %> $OPTIONAL_START_ARGUMENTS \
+        || log_progress_msg "already running"
+    log_end_msg 0
+}
+
+do_stop(){
+    log_daemon_msg "Stopping <%= @description %>" "<%= @name %>"
+    start-stop-daemon \
+        --stop \
+        --quiet \
+        --pidfile /var/run/<%= @name%>.pid \
+        --name `basename <%= @daemon_path %>` \
+        --retry TERM/5/TERM/5
+        RES=$?
+        if [ $RES -eq 1 ]; then
+            log_progress_msg "not running"
+        fi
+        if [ $RES -eq 2 ]; then
+            log_progress_msg "not responding to TERM signals"
+        fi
+        if [ -f /var/run/<%= @name%>.pid ]; then
+            log_progress_msg "(removing stale PID file)"
+            rm /var/run/<%= @name%>.pid
+        fi
+        log_end_msg 0
+}
+
+do_reload(){
+    log_daemon_msg "Reloading <%= @description %>" "<%= @name %>"
+    if ! start-stop-daemon \
+        --stop --quiet \
+        --pidfile /var/run/<%= @name%>.pid \
+        --name `basename <%= @daemon_path %>` \
+        --signal 1; then
+        log_progress_msg "not running."
+    fi
+    log_end_msg 0
+}
+
+do_status(){
+     status_of_proc -p /var/run/<%= @name%>.pid <%= @daemon_path %> <%= @name %> && exit 0 || exit $?
+}
+
+case "$1" in
+    start)
+        do_start
+        ;;
+    stop)
+        do_stop
+        ;;
+    restart)
+        do_stop
+        do_start
+        ;;
+    reload)
+        do_reload
+        ;;
+    force-reload)
+        do_reload
+        ;;
+    status)
+        do_status
+        ;;
+    *)
+        echo "Usage: /etc/init.d/<%= @name %> {start|stop|restart|reload|force-reload|status}"
+        exit 1
+        ;;
+esac
+
+exit 0 

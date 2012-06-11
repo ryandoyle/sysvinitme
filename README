@@ -1,0 +1,24 @@
+sysvinitme generates SysV init compliant start/stop scripts for your services
+
+Process has:
+- arguments
+    - static
+    - configurable
+
+- execution mode
+    - foreground
+    - background, with or without PID
+
+- logging
+    - simple stdout/stderr to the screen
+    - as part of the daemon
+
+- process detection
+
+- reload capability
+
+- environment variables
+
+- dependencies
+
+- user
