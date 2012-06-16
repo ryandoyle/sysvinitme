@@ -2,7 +2,7 @@ require 'erb'
 require File.expand_path(File.dirname(__FILE__) + '/../lib/sysvinitme')
 
 
-describe "creating Debain dummy netcat service" do
+describe "creating Debain dummy foreground service" do
 
     before(:each) do
 
@@ -62,3 +62,35 @@ describe "creating Debain dummy netcat service" do
 
 end 
 
+describe "creating a Debian dummy background service that can reload" do
+    before(:each) do
+
+        @t = SysVInitMe::Template.new
+        @t.generate(
+            :target => :debian,
+            :name => 'netcat',
+            :description => 'Netcat Test Daemon',
+            :daemon_path => '/bin/nc',
+            :daemon_needs_background => false,
+            :can_reload => true,
+            :deb_start_dep => ['$network', '$local_fs', '$remote_fs'],
+            :deb_stop_dep => ['$network', '$local_fs', '$remote_fs']
+        )
+        @init = @t.template_data
+    end
+
+    it "does not specify the user to run as" do 
+        @init.should_not match /--chuid nobody/
+    end
+
+    it "does not need to be daemonised" do
+        @init.should_not match /--background/
+        @init.should_not match /--make-pidfile/
+    end
+
+    it "can reload the service by sending a SIGHUP" do
+        @init.should match /--signal 1/
+        @init.should match /# We are able to reload this service/
+    end
+
+end
