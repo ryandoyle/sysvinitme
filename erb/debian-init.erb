@@ -19,8 +19,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          <%= @name %>
-# Required-Start:    <% @start_dep.each do |d|%><%= d + " " -%><% end %>
-# Required-Stop:     <% @stop_dep.each do |d|%><%= d + " " -%><% end %>
+# Required-Start:    <% @deb_start_dep.each do |d|%><%= d + " " -%><% end %>
+# Required-Stop:     <% @deb_stop_dep.each do |d|%><%= d + " " -%><% end %>
 <% if defined? @should_start_dep -%>
 # Should-Start:      <% @should_start_dep.each do |d|%><%= d + " " -%><% end %>
 <% end -%>
@@ -50,15 +50,12 @@ do_start(){
 <% if defined? @user # Check if we want to pass the user through -%>
         --chuid <%= @user %> \
 <% end -%>
-<% if defined? @group # Check if we want to run as group -%>
-        --group <%= @group %>
-<% end -%>
 <% if @daemon_needs_background # Foreground process send to BG and make PID file -%>
         --background \
         --make-pidfile \
 <% end -%>
         -- \
-        <%= @static_start_args %> $OPTIONAL_START_ARGUMENTS \
+        <%= @start_args %> $OPTIONAL_START_ARGUMENTS \
         || log_progress_msg "already running"
     log_end_msg 0
 }
@@ -87,6 +84,7 @@ do_stop(){
 
 do_reload(){
     log_daemon_msg "Reloading <%= @description %>" "<%= @name %>"
+<% if @can_reload -%>
     if ! start-stop-daemon \
         --stop --quiet \
         --pidfile /var/run/<%= @name%>.pid \
@@ -95,10 +93,25 @@ do_reload(){
         log_progress_msg "not running."
     fi
     log_end_msg 0
+<% else -%>
+    log_daemon_msg "Reload is not supported"
+    log_end_msg 1
+<% end -%>
 }
 
 do_status(){
      status_of_proc -p /var/run/<%= @name%>.pid <%= @daemon_path %> <%= @name %> && exit 0 || exit $?
+}
+
+do_forcereload(){
+<% if @can_reload -%>
+    # We are able to reload this service
+    do_reload
+<% else -%>
+    # We can't reload this service so restart it
+    do_stop
+    do_start
+<% end -%>
 }
 
 case "$1" in
@@ -116,7 +129,7 @@ case "$1" in
         do_reload
         ;;
     force-reload)
-        do_reload
+        do_forcereload
         ;;
     status)
         do_status

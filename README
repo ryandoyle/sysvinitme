@@ -1,4 +1,7 @@
-sysvinitme generates SysV init compliant start/stop scripts for your services
+sysvinitme generates SysV init start/stop scripts for your services.
+
+It needs to conform to the LSB specifications for init scripts to be LSB compliant
+    - See http://refspecs.linuxbase.org/LSB_3.1.0/LSB-Core-generic/LSB-Core-generic/iniscrptact.html
 
 Process has:
 - arguments
@@ -22,3 +25,10 @@ Process has:
 - dependencies
 
 - user
+
+Further reading:
+
+    - http://refspecs.linuxbase.org/LSB_3.1.0/LSB-Core-generic/LSB-Core-generic/iniscrptact.html
+    - http://wiki.debian.org/LSBInitScripts
+    - http://wiki.debian.org/LSBInitScripts/DependencyBasedBoot
+    - http://www.sensi.org/~alec/unix/redhat/sysvinit.html

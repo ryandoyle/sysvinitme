@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+#
+# This is free software; you may redistribute it and/or modify
+# it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2,
+# or (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License with
+# the Debian operating system, in /usr/share/common-licenses/GPL;  if
+# not, write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA 02111-1307 USA
+#
+# Parameters for chkconfig 
+# chkconfig: 345 99 01
+# description: <%= @description %>
+
+# Source libraries
+. /etc/rc.d/init.d/functions
+. /etc/sysconfig/network
+
+# Source optional arguments
+if [ -r /etc/sysconfig/<%= @name %> ]; then
+    source /etc/sysconfig/<%= @name %>
+fi 
+
+do_start(){
+    echo -n "Starting <%= @name %>: "
+    daemon <% if defined? @user -%> --user <%= @user %><% end -%> "<%= @daemon_path %> <%= @static_start_args %> $OPTIONAL_START_ARGUMENTS <% if @daemon_needs_background -%>& <% end %>"
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/<%= @name %>
+    return $RETVAL
+    
+}
+
+do_stop(){
+    echo -n "Stopping <%= @name %>: "
+    killproc `basename <%= @daemon_path %>`
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/<%= @name %>
+    return $RETVAL
+}
+
+do_reload(){
+    echo -n "Reloading <%= @name %>: "
+<% if @can_reload -%>
+    killproc `basename <%= @daemon_path %>` 1 # Send a sighup
+    return $?
+<% else -%>
+    failure $"Reload not supported"
+    exit 1
+<% end -%>
+}
+
+do_status(){
+     status `basename <%= @daemon_path %>`
+}
+
+do_forcereload(){
+<% if @can_reload -%>
+    do_reload
+<% else -%>
+    do_stop
+    do_start
+<% end -%>
+}
+
+case "$1" in
+    start)
+        do_start
+        ;;
+    stop)
+        do_stop
+        ;;
+    restart)
+        do_stop
+        do_start
+        ;;
+    reload)
+        do_reload
+        ;;
+    condrestart)
+        if [ -f /var/lock/subsys/<%= @name %> ]; then
+            do_stop
+            do_start
+        fi
+        ;;
+    force-reload)
+        do_forcereload
+        ;;
+    status)
+        do_status
+        ;;
+    *)
+        echo "Usage: /etc/init.d/<%= @name %> {start|stop|restart|reload|force-reload|condrestart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0 
